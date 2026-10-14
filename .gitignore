@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ipynb_checkpoints/
+outputs/
+.gradio/
+# Kaggle downloads and trained weights stay local (weights are ~45 MB)
+*.zip
+models/*.pt
+# Real MRNet scans exported by the notebook: Stanford's research use agreement does not allow redistribution
+samples/mrnet/

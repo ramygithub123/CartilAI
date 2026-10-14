@@ -1,0 +1,42 @@
+# CartilAI configuration — single source of truth for the local pipeline,
+# the Gradio app and the generated Kaggle notebook.
+
+seed: 42
+
+findings: [abnormal, acl, meniscus]
+finding_names:
+  abnormal: Abnormal
+  acl: ACL tear
+  meniscus: Meniscal tear
+
+data:
+  plane: sagittal          # MRNet plane used for training (MRNet paper: one model per plane)
+  image_size: 256          # MRNet slices are 256x256
+  internal_val_fraction: 0.1   # held out from MRNet "train" for model selection and thresholds
+  num_workers: 2
+
+model:
+  backbone: resnet18
+  pretrained: true         # ImageNet weights (needs internet on Kaggle)
+  dropout: 0.3
+
+train:
+  epochs: 16
+  lr: 3.0e-5               # peak LR of a one-cycle schedule (MRNet paper: Adam, 1e-5, one exam per step)
+  weight_decay: 1.0e-4
+  max_train_minutes: 85    # hard wall-clock budget so the notebook finishes in < ~2 h
+  augment: true
+  rotation_degrees: 25
+  translate_pixels: 25
+  hflip: true
+  amp: true                # mixed precision on GPU
+
+paths:
+  models_dir: models
+  results_dir: results
+  samples_dir: samples
+  weights_file: models/cartilai_resnet18.pt
+  metrics_file: results/metrics.json
+
+report:
+  likely_threshold_margin: 0.15   # +/- around the decision threshold that counts as "indeterminate"
