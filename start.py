@@ -69,7 +69,7 @@ def main() -> None:
     """Set up (if needed) and launch the app."""
     py = ensure_environment()
     install_kaggle_outputs(py)
-    print("\nStarting CartilAI at http://127.0.0.1:7860  (press Ctrl+C to stop)\n", flush=True)
+    print("\nStarting CartilAI; it opens in your browser (press Ctrl+C to stop) ...\n", flush=True)
     sys.exit(subprocess.call([str(py), "app.py", *sys.argv[1:]], cwd=ROOT))
 
 

@@ -305,10 +305,10 @@ def build_demo() -> gr.Blocks:
                 images = [(RESULTS_DIR / n, t) for n, t in (("roc_curves.png", "ROC curves"),
                                                              ("confusion_matrices.png", "Confusion matrices"),
                                                              ("training_curves.png", "Training curves"))]
-                with gr.Row():
-                    for path, title in images:
-                        if path.exists():
-                            gr.Image(str(path), label=title, interactive=False, buttons=["download"])
+                for path, title in images:
+                    if path.exists():
+                        gr.Markdown(f"#### {title}")
+                        gr.Image(str(path), show_label=False, interactive=False, buttons=["download"], height=420)
 
         outputs = [state, findings, heat_for, slice_slider, viewer, strip, report, download]
         run_sample.click(analyze_sample, [sample, alpha], outputs)
