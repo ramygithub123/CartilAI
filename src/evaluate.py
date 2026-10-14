@@ -63,7 +63,11 @@ def youden_threshold(y_true: np.ndarray, y_prob: np.ndarray) -> float:
     if len(np.unique(y_true)) < 2:
         return 0.5
     fpr, tpr, thr = roc_curve(y_true, y_prob)
-    best = int(np.argmax(tpr - fpr))
+    finite = np.isfinite(thr)  # sklearn's first threshold is +inf ("predict nothing positive")
+    j = np.where(finite, tpr - fpr, -np.inf)
+    best = int(np.argmax(j))
+    if j[best] <= 0:
+        return 0.5
     return float(np.clip(thr[best], 1e-6, 1 - 1e-6))
 
 

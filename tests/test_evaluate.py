@@ -39,3 +39,9 @@ def test_plots_are_written(tmp_path):
     plot_roc_curves(y, p, FINDINGS, names, tmp_path / "roc.png")
     plot_confusion_matrices(compute_metrics(y, p, FINDINGS, [0.5] * 3), FINDINGS, names, tmp_path / "cm.png")
     assert (tmp_path / "roc.png").stat().st_size > 1000 and (tmp_path / "cm.png").stat().st_size > 1000
+
+
+def test_youden_never_returns_predict_nothing_threshold():
+    # an uninformative model must not get a threshold that labels everything negative
+    t = youden_threshold(np.array([0, 1, 0, 1]), np.array([0.9, 0.1, 0.8, 0.2]))
+    assert t == 0.5

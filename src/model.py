@@ -41,6 +41,7 @@ class CartilAINet(nn.Module):
             resnet = torchvision.models.resnet18(weights=None)
         # Everything up to (and including) layer4; drop avgpool + fc.
         self.features = nn.Sequential(*list(resnet.children())[:-2])
+        use_exam_batchnorm(self.features)
         self.pool = nn.AdaptiveAvgPool2d(1)
         self.dropout = nn.Dropout(dropout)
         self.classifier = nn.Linear(512, num_findings)
@@ -63,6 +64,26 @@ class CartilAINet(nn.Module):
         per_slice = self.pool(fmap).flatten(1)    # (S, 512)
         exam = per_slice.max(dim=0).values        # (512,)
         return self.classifier(self.dropout(exam))
+
+
+def use_exam_batchnorm(module: nn.Module) -> None:
+    """Make every BatchNorm layer normalise with the statistics of the current exam.
+
+    One training step sees the slices of a single exam, so BatchNorm's running
+    averages (used in eval mode) never match the per-exam statistics the network
+    was trained with, and predictions degrade at inference time. Dropping the
+    running statistics makes training and inference behave identically: each
+    exam is normalised over its own slices. The learned scale/shift are kept.
+
+    Args:
+        module: Network whose BatchNorm layers are converted in place.
+    """
+    for m in module.modules():
+        if isinstance(m, nn.modules.batchnorm._BatchNorm):
+            m.track_running_stats = False
+            m.running_mean = None
+            m.running_var = None
+            m.num_batches_tracked = None
 
 
 def build_model(config: dict, pretrained: bool | None = None) -> CartilAINet:

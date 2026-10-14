@@ -26,3 +26,16 @@ def test_gradients_reach_backbone():
     model = CartilAINet(pretrained=False)
     model(torch.randn(3, 3, 64, 64)).sum().backward()
     assert model.features[0].weight.grad is not None
+
+
+def test_train_and_eval_mode_agree():
+    """Per-exam BatchNorm: the same exam gets the same score in train and eval mode (dropout off)."""
+    torch.manual_seed(0)
+    model = CartilAINet(pretrained=False, dropout=0.0)
+    x = torch.randn(6, 3, 64, 64)
+    with torch.no_grad():
+        model.train()
+        a = model(x)
+        model.eval()
+        b = model(x)
+    assert torch.allclose(a, b, atol=1e-5)
