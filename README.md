@@ -55,6 +55,7 @@ flowchart LR
 - **2D CNN per slice + max-pool (MRNet):** pretrained 2D networks transfer well from ImageNet, need far less data and GPU than 3D CNNs, and max-pooling lets one clearly abnormal slice drive the exam-level score.
 - **One model, three outputs:** a shared backbone learns features useful for all three findings; independent sigmoids allow several findings at once.
 - **Sagittal plane first:** ACL and menisci are best seen on sagittal images; the MRNet paper's per-plane models were strongest there for ACL.
+- **Per-exam BatchNorm:** each training step sees one exam, so BatchNorm normalises with that exam's statistics at both training and inference time. Keeping ImageNet-style running averages instead caused a train/inference mismatch that cut held-out AUC sharply in synthetic experiments.
 - **Honest evaluation:** the best epoch and decision thresholds are picked on a 10% split of MRNet *train*; the official MRNet *validation* set (120 exams) is used once, as an untouched test set.
 
 ## Results
@@ -105,7 +106,7 @@ Put `cartilai_outputs.zip` in the project folder (next to `app.py`) and run `pyt
 
 ```bash
 pip install -r requirements-dev.txt
-pytest                                       # 39 tests, ~2 minutes on CPU
+pytest                                       # 41 tests, ~2 minutes on CPU
 python -m src.train --synthetic --quick      # whole training pipeline on synthetic data
 python scripts/build_notebook.py             # regenerate the Kaggle notebook after editing src/
 ```

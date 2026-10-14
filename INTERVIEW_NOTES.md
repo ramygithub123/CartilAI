@@ -36,6 +36,7 @@ CartilAI is a research prototype that looks at a knee MRI and estimates how like
 - **Augmentation:** random small rotations, shifts and flips of each exam so the model doesn't memorise exact positions.
 - **Mixed precision** on the GPU for speed, and a hard **time budget** so the Kaggle run always finishes in under ~2 hours.
 - **Fixed random seeds** so results are reproducible.
+- **Per-exam normalisation:** the network's BatchNorm layers normalise each exam using its own slices, both in training and when the app runs. I found that the default behaviour (averaged statistics at inference) didn't match how the model was trained and made test results much worse in my synthetic experiments, so I changed it and added a test for it. This is a good "debugging story" for interviews.
 
 ### Grad-CAM (the heatmaps)
 - Grad-CAM answers: "Which parts of the image pushed this score up?"
