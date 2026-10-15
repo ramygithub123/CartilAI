@@ -15,8 +15,10 @@ rows ``case_id,label`` without a header.
 from __future__ import annotations
 
 import csv
+import io
 import math
 import os
+import pickle
 from pathlib import Path
 from typing import Sequence
 
@@ -91,6 +93,58 @@ def read_labels(root: str | Path, split: str, findings: Sequence[str]) -> tuple[
     case_ids = sorted(set.intersection(*(set(m) for m in per_finding)))
     labels = np.array([[m[c] for m in per_finding] for c in case_ids], dtype=np.float32)
     return case_ids, labels
+
+
+class _NumpyOnlyUnpickler(pickle.Unpickler):
+    """Unpickler that can only rebuild NumPy arrays, so an uploaded pickle cannot run code."""
+
+    ALLOWED = {
+        ("numpy.core.multiarray", "_reconstruct"), ("numpy._core.multiarray", "_reconstruct"),
+        ("numpy.core.multiarray", "scalar"), ("numpy._core.multiarray", "scalar"),
+        ("numpy.core.numeric", "_frombuffer"), ("numpy._core.numeric", "_frombuffer"),
+        ("numpy", "ndarray"), ("numpy", "dtype"),
+        ("_codecs", "encode"),  # protocol-2 pickles store raw bytes via codecs.encode
+    }
+
+    def find_class(self, module: str, name: str):  # type: ignore[override]
+        if (module, name) in self.ALLOWED:
+            return super().find_class(module, name)
+        raise pickle.UnpicklingError(f"refusing to load {module}.{name}: only NumPy arrays are allowed")
+
+
+def load_volume_file(path: str | Path) -> np.ndarray:
+    """Read a scan from disk: MRNet ``.npy`` or a pickled NumPy array (``.pck``/``.pkl``).
+
+    ``.pck`` is the format of the KneeMRI dataset (Clinical Hospital Centre Rijeka),
+    a useful outside test set. Pickles are loaded with an unpickler that only
+    accepts NumPy arrays.
+
+    Args:
+        path: File to read.
+
+    Returns:
+        The array stored in the file.
+
+    Raises:
+        ValueError: If the file is not a supported scan.
+    """
+    path = Path(path)
+    if path.suffix.lower() in {".pck", ".pkl", ".pickle"}:
+        data = path.read_bytes()
+        try:
+            try:
+                arr = _NumpyOnlyUnpickler(io.BytesIO(data)).load()
+            except UnicodeDecodeError:  # Python 2 pickles (KneeMRI) need latin1
+                arr = _NumpyOnlyUnpickler(io.BytesIO(data), encoding="latin1").load()
+        except Exception as exc:
+            raise ValueError(f"Could not read {path.name} as a pickled NumPy volume ({exc})") from exc
+        if not isinstance(arr, np.ndarray):
+            raise ValueError(f"{path.name} does not contain an image volume")
+        return arr
+    try:
+        return np.load(path, allow_pickle=False)
+    except Exception as exc:
+        raise ValueError(f"Could not read {path.name} as a NumPy .npy volume ({exc})") from exc
 
 
 def to_uint8_volume(volume: np.ndarray, image_size: int = 256) -> np.ndarray:

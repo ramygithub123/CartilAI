@@ -18,6 +18,7 @@ import numpy as np
 from PIL import Image
 
 from src.config import PROJECT_ROOT
+from src.data import load_volume_file
 from src.gradcam import overlay
 from src.inference import Analysis, Predictor, list_samples, load_metrics
 from src.report import DISCLAIMER
@@ -207,14 +208,11 @@ def analyze_sample(title: str, alpha: float) -> tuple[Any, ...]:
 
 
 def analyze_upload(file_path: str | None, alpha: float) -> tuple[Any, ...]:
-    """Load an uploaded ``.npy`` volume and analyse it."""
+    """Load an uploaded ``.npy`` (MRNet) or ``.pck`` (KneeMRI) volume and analyse it."""
     if not file_path:
-        raise gr.Error("Upload an MRNet-format .npy volume first.")
+        raise gr.Error("Upload an MRNet-format .npy volume (or a KneeMRI .pck file) first.")
     try:
-        volume = np.load(file_path, allow_pickle=False)
-    except Exception as exc:
-        raise gr.Error(f"Could not read the file as a NumPy .npy volume ({exc}).") from exc
-    try:
+        volume = load_volume_file(file_path)
         return _run(volume, Path(file_path).name, alpha)
     except ValueError as exc:
         raise gr.Error(str(exc)) from exc
@@ -288,8 +286,8 @@ def build_demo() -> gr.Blocks:
                                           label="Bundled sample scans", elem_id="ca-samples")
                         info = gr.HTML(sample_info(SAMPLE_TITLES[0]) if SAMPLE_TITLES else "")
                         run_sample = gr.Button("Analyze selected sample", variant="primary", elem_id="ca-run-sample")
-                        with gr.Accordion("…or upload your own MRNet .npy volume", open=False):
-                            upload = gr.File(label="MRNet-format volume (.npy, slices × H × W)", file_types=[".npy"], type="filepath")
+                        with gr.Accordion("…or upload your own scan (.npy or .pck)", open=False):
+                            upload = gr.File(label="Sagittal knee MRI: MRNet .npy or KneeMRI .pck", file_types=[".npy", ".pck", ".pkl"], type="filepath")
                             run_upload = gr.Button("Analyze uploaded scan", elem_id="ca-run-upload")
                         findings = gr.HTML(findings_html(None))
                     with gr.Column(scale=6, min_width=360):

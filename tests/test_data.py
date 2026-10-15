@@ -81,3 +81,36 @@ def test_stratified_split_is_disjoint_and_complete():
     labels = np.array([[1, 1, 0]] * 10 + [[0, 0, 0]] * 10 + [[1, 0, 1]] * 10, dtype=np.float32)
     tr, va = stratified_split(labels, 0.2, seed=0)
     assert set(tr).isdisjoint(va) and len(tr) + len(va) == 30 and len(va) == 6
+
+
+def test_load_volume_file_npy_and_pickles(tmp_path):
+    import os
+    import pickle
+
+    from src.data import load_volume_file
+
+    vol = np.random.default_rng(0).integers(0, 4000, (30, 320, 320)).astype(np.int16)
+    np.save(tmp_path / "scan.npy", vol)
+    for proto in (2, pickle.HIGHEST_PROTOCOL):  # KneeMRI ships Python 2 era pickles
+        (tmp_path / f"scan{proto}.pck").write_bytes(pickle.dumps(vol, protocol=proto))
+        assert np.array_equal(load_volume_file(tmp_path / f"scan{proto}.pck"), vol)
+    assert np.array_equal(load_volume_file(tmp_path / "scan.npy"), vol)
+    assert to_uint8_volume(load_volume_file(tmp_path / "scan2.pck")).shape == (30, 256, 256)
+
+
+def test_load_volume_file_refuses_code_in_pickles(tmp_path):
+    import os
+    import pickle
+
+    from src.data import load_volume_file
+
+    class Evil:
+        def __reduce__(self):
+            return (os.system, ("echo pwned",))
+
+    (tmp_path / "evil.pck").write_bytes(pickle.dumps(Evil()))
+    with pytest.raises(ValueError, match="only NumPy arrays"):
+        load_volume_file(tmp_path / "evil.pck")
+    (tmp_path / "junk.npy").write_text("nope")
+    with pytest.raises(ValueError):
+        load_volume_file(tmp_path / "junk.npy")
