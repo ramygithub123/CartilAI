@@ -61,10 +61,18 @@ CSS = """
 .ca-strip { display:flex; align-items:flex-end; gap:2px; height:46px; margin-top:4px; }
 .ca-strip div { flex:1; background:#99f6e4; border-radius:2px 2px 0 0; min-height:2px; }
 .ca-strip div.cur { background:#0f766e; }
-.ca-sample { font-size:13.5px; color:var(--ca-muted); }
+.ca-sample { font-size:13.5px; color:var(--body-text-color, #0f172a); opacity:.85; }
 .ca-metrics table { width:100%; border-collapse:collapse; font-size:14px; }
 .ca-metrics th, .ca-metrics td { border-bottom:1px solid var(--ca-line); padding:8px 10px; text-align:left; }
 .ca-metrics th { color:var(--ca-muted); font-weight:600; }
+/* Our panels have fixed light backgrounds, so pin their text colours; otherwise Gradio's dark theme
+   recolours <b>, <i> and headings to near-white and they disappear. */
+#ca-disclaimer, #ca-disclaimer * { color:#9a3412 !important; }
+.ca-card, .ca-card .ca-name, .ca-card .ca-pct, .ca-card b, .ca-card strong, .ca-card i, .ca-card em { color:var(--ca-ink) !important; }
+.ca-card h3, .ca-card .ca-note { color:var(--ca-muted) !important; }
+.ca-card .ca-note b { color:var(--ca-ink) !important; }
+.ca-chip.pos { color:#991b1b !important; } .ca-chip.ind { color:#92400e !important; } .ca-chip.neg { color:#166534 !important; }
+.ca-row { border-top-color:#f1f5f9 !important; }
 footer { display:none !important; }
 @media (max-width: 700px) { .ca-row { grid-template-columns: 1fr 56px; } .ca-track, .ca-chip { grid-column: span 2; } }
 """
